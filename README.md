@@ -7,6 +7,13 @@
 
 This Symfony bundle integrates PhpSpreadsheet into Symfony using Twig.
 
+!!! This repository is a continuation of the original TwigSpreadsheetBundle. !!!
+
+A list of differences from the original TwigSpreadsheetBundle:
+- added support for Symfony 5 and Twig 3
+- removed RequestListener.php
+- removed functional tests for controller functionality
+
 ## Features
 
  * Easy to use Twig integration including ``macro`` and ``include`` support

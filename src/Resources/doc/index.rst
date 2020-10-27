@@ -5,7 +5,6 @@ TwigSpreadsheetBundle Documentation
     :maxdepth: 2
 
     installation
-    getting_started
     configuration
     examples
     twig_functions
