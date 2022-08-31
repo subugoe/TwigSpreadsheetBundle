@@ -1,4 +1,4 @@
-# TwigSpreadsheetBundle
+# TwigSpreadsheetBundle (PHP 8.0, Symfony 6.0 & Twig 3.0)
 
 [![Teavis CI: Build Status](https://travis-ci.org/MewesK/TwigSpreadsheetBundle.png?branch=master)](https://travis-ci.org/MewesK/TwigSpreadsheetBundle)
 [![Scrutinizer: Code Quality](https://scrutinizer-ci.com/g/MewesK/TwigSpreadsheetBundle/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/MewesK/TwigSpreadsheetBundle/?branch=master)
@@ -6,6 +6,13 @@
 [![SensioLabsInsight: Code Quality](https://insight.sensiolabs.com/projects/f5c25ebe-0cbc-4be1-a094-4ef87d48ea1b/mini.png)](https://insight.sensiolabs.com/projects/f5c25ebe-0cbc-4be1-a094-4ef87d48ea1b)
 
 This Symfony bundle integrates PhpSpreadsheet into Symfony using Twig.
+
+This repository is a continuation of the original TwigSpreadsheetBundle.
+
+A list of differences from the original TwigSpreadsheetBundle:
+- added support for Symfony 6 and Twig 3
+- removed RequestListener.php
+- removed functional tests for controller functionality
 
 ## Features
 
@@ -29,8 +36,9 @@ The following software is required to use PhpSpreadsheet/TwigSpreadsheetBundle.
 
 **Required by this bundle:**
 
- * PHP 7.0 or newer
- * Symfony 3.2 or newer
+ * PHP 8.0 or newer
+ * Symfony 6.0 or newer
+ * Twig 3.0 or newer
 
 **Required by PhpSpreadsheet:**
 

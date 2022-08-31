@@ -3,60 +3,61 @@
 namespace MewesK\TwigSpreadsheetBundle\Wrapper;
 
 use PhpOffice\PhpSpreadsheet\Worksheet\HeaderFooter;
+use Twig\Environment;
 
-/**
- * Class HeaderFooterWrapper.
- */
 class HeaderFooterWrapper extends BaseWrapper
 {
-    const ALIGNMENT_CENTER = 'center';
-    const ALIGNMENT_LEFT = 'left';
-    const ALIGNMENT_RIGHT = 'right';
-
-    const BASETYPE_FOOTER = 'footer';
-    const BASETYPE_HEADER = 'header';
-
-    const TYPE_EVEN = 'even';
-    const TYPE_FIRST = 'first';
-    const TYPE_ODD = 'odd';
+    /**
+     * @var string
+     */
+    public const ALIGNMENT_CENTER = 'center';
 
     /**
-     * @var SheetWrapper
+     * @var string
      */
-    protected $sheetWrapper;
+    public const ALIGNMENT_LEFT = 'left';
 
     /**
-     * @var HeaderFooter|null
+     * @var string
      */
-    protected $object;
-    /**
-     * @var array
-     */
-    protected $alignmentParameters;
+    public const ALIGNMENT_RIGHT = 'right';
 
     /**
-     * HeaderFooterWrapper constructor.
-     *
-     * @param array             $context
-     * @param \Twig_Environment $environment
-     * @param SheetWrapper      $sheetWrapper
+     * @var string
      */
-    public function __construct(array $context, \Twig_Environment $environment, SheetWrapper $sheetWrapper)
+    public const BASETYPE_FOOTER = 'footer';
+
+    /**
+     * @var string
+     */
+    public const BASETYPE_HEADER = 'header';
+
+    /**
+     * @var string
+     */
+    public const TYPE_EVEN = 'even';
+
+    /**
+     * @var string
+     */
+    public const TYPE_FIRST = 'first';
+
+    /**
+     * @var string
+     */
+    public const TYPE_ODD = 'odd';
+
+    protected ?HeaderFooter $object = null;
+
+    protected array $alignmentParameters = [];
+
+    public function __construct(array $context, Environment $environment, protected SheetWrapper $sheetWrapper)
     {
         parent::__construct($context, $environment);
-
-        $this->sheetWrapper = $sheetWrapper;
-
-        $this->object = null;
-        $this->alignmentParameters = [];
     }
 
     /**
-     * @param string $alignment
-     *
      * @throws \InvalidArgumentException
-     *
-     * @return string
      */
     public static function validateAlignment(string $alignment): string
     {
@@ -68,11 +69,7 @@ class HeaderFooterWrapper extends BaseWrapper
     }
 
     /**
-     * @param string $baseType
-     *
      * @throws \InvalidArgumentException
-     *
-     * @return string
      */
     public static function validateBaseType(string $baseType): string
     {
@@ -84,21 +81,17 @@ class HeaderFooterWrapper extends BaseWrapper
     }
 
     /**
-     * @param string      $baseType
-     * @param string|null $type
-     * @param array       $properties
-     *
      * @throws \InvalidArgumentException
      * @throws \LogicException
      * @throws \RuntimeException
      */
-    public function start(string $baseType, string $type = null, array $properties = [])
+    public function start(string $baseType, string $type = null, array $properties = []): void
     {
-        if ($this->sheetWrapper->getObject() === null) {
+        if (null === $this->sheetWrapper->getObject()) {
             throw new \LogicException();
         }
 
-        if ($type !== null) {
+        if (null !== $type) {
             $type = strtolower($type);
 
             if (!\in_array($type, [self::TYPE_EVEN, self::TYPE_FIRST, self::TYPE_ODD], true)) {
@@ -119,9 +112,9 @@ class HeaderFooterWrapper extends BaseWrapper
      * @throws \InvalidArgumentException
      * @throws \LogicException
      */
-    public function end()
+    public function end(): void
     {
-        if ($this->object === null) {
+        if (null === $this->object) {
             throw new \LogicException();
         }
 
@@ -129,7 +122,7 @@ class HeaderFooterWrapper extends BaseWrapper
 
         switch ($this->parameters['type']) {
             case null:
-                if ($this->parameters['baseType'] === self::BASETYPE_HEADER) {
+                if (self::BASETYPE_HEADER === $this->parameters['baseType']) {
                     $this->object->setOddHeader($value);
                     $this->object->setEvenHeader($value);
                     $this->object->setFirstHeader($value);
@@ -138,30 +131,34 @@ class HeaderFooterWrapper extends BaseWrapper
                     $this->object->setEvenFooter($value);
                     $this->object->setFirstFooter($value);
                 }
+
                 break;
             case self::TYPE_EVEN:
                 $this->object->setDifferentOddEven(true);
-                if ($this->parameters['baseType'] === self::BASETYPE_HEADER) {
+                if (self::BASETYPE_HEADER === $this->parameters['baseType']) {
                     $this->object->setEvenHeader($value);
                 } else {
                     $this->object->setEvenFooter($value);
                 }
+
                 break;
             case self::TYPE_FIRST:
                 $this->object->setDifferentFirst(true);
-                if ($this->parameters['baseType'] === self::BASETYPE_HEADER) {
+                if (self::BASETYPE_HEADER === $this->parameters['baseType']) {
                     $this->object->setFirstHeader($value);
                 } else {
                     $this->object->setFirstFooter($value);
                 }
+
                 break;
             case self::TYPE_ODD:
                 $this->object->setDifferentOddEven(true);
-                if ($this->parameters['baseType'] === self::BASETYPE_HEADER) {
+                if (self::BASETYPE_HEADER === $this->parameters['baseType']) {
                     $this->object->setOddHeader($value);
                 } else {
                     $this->object->setOddFooter($value);
                 }
+
                 break;
         }
 
@@ -170,15 +167,12 @@ class HeaderFooterWrapper extends BaseWrapper
     }
 
     /**
-     * @param string $alignment
-     * @param array  $properties
-     *
      * @throws \InvalidArgumentException
      * @throws \LogicException
      */
-    public function startAlignment(string $alignment, array $properties = [])
+    public function startAlignment(string $alignment, array $properties = []): void
     {
-        if ($this->object === null) {
+        if (null === $this->object) {
             throw new \LogicException();
         }
 
@@ -206,47 +200,35 @@ class HeaderFooterWrapper extends BaseWrapper
      * @throws \InvalidArgumentException
      * @throws \LogicException
      */
-    public function endAlignment($value)
+    public function endAlignment($value): void
     {
-        if ($this->object === null || !isset($this->alignmentParameters['type'])) {
+        if (null === $this->object || !isset($this->alignmentParameters['type'])) {
             throw new \LogicException();
         }
 
-        if (strpos($this->parameters['value'][$this->alignmentParameters['type']], '&G') === false) {
+        if (!str_contains($this->parameters['value'][$this->alignmentParameters['type']], '&G')) {
             $this->parameters['value'][$this->alignmentParameters['type']] .= $value;
         }
 
         $this->alignmentParameters = [];
     }
 
-    /**
-     * @return null|HeaderFooter
-     */
-    public function getObject()
+    public function getObject(): ?HeaderFooter
     {
         return $this->object;
     }
 
-    /**
-     * @param null|HeaderFooter $object
-     */
-    public function setObject(HeaderFooter $object = null)
+    public function setObject(HeaderFooter $object = null): void
     {
         $this->object = $object;
     }
 
-    /**
-     * @return array
-     */
     public function getAlignmentParameters(): array
     {
         return $this->alignmentParameters;
     }
 
-    /**
-     * @param array $alignmentParameters
-     */
-    public function setAlignmentParameters(array $alignmentParameters)
+    public function setAlignmentParameters(array $alignmentParameters): void
     {
         $this->alignmentParameters = $alignmentParameters;
     }

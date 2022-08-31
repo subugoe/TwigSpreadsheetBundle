@@ -3,71 +3,43 @@
 namespace MewesK\TwigSpreadsheetBundle\Wrapper;
 
 use PhpOffice\PhpSpreadsheet\Exception;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\ColumnDimension;
 use PhpOffice\PhpSpreadsheet\Worksheet\RowDimension;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-/**
- * Class SheetWrapper.
- */
 class SheetWrapper extends BaseWrapper
 {
     /**
      * @var int
      */
-    const COLUMN_DEFAULT = 1;
+    public const COLUMN_DEFAULT = 1;
+
     /**
      * @var int
      */
-    const ROW_DEFAULT = 1;
+    public const ROW_DEFAULT = 1;
 
-    /**
-     * @var DocumentWrapper
-     */
-    protected $documentWrapper;
+    protected ?Worksheet $object = null;
 
-    /**
-     * @var Worksheet|null
-     */
-    protected $object;
-    /**
-     * @var null|int
-     */
-    protected $row;
-    /**
-     * @var null|int
-     */
-    protected $column;
+    protected ?int $row = null;
 
-    /**
-     * SheetWrapper constructor.
-     *
-     * @param array             $context
-     * @param \Twig_Environment $environment
-     * @param DocumentWrapper   $documentWrapper
-     */
-    public function __construct(array $context, \Twig_Environment $environment, DocumentWrapper $documentWrapper)
+    protected ?int $column = null;
+
+    public function __construct(array $context, \Twig\Environment $environment, protected DocumentWrapper $documentWrapper)
     {
         parent::__construct($context, $environment);
-
-        $this->documentWrapper = $documentWrapper;
-
-        $this->object = null;
-        $this->row = null;
-        $this->column = null;
     }
 
     /**
      * @param int|string|null $index
-     * @param array $properties
      *
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \RuntimeException
      * @throws \LogicException
      */
-    public function start($index, array $properties = [])
+    public function start($index, array $properties = []): void
     {
-        if ($this->documentWrapper->getObject() === null) {
+        if (null === $this->documentWrapper->getObject()) {
             throw new \LogicException();
         }
 
@@ -78,6 +50,7 @@ class SheetWrapper extends BaseWrapper
                 // create new sheet with a name
                 $this->documentWrapper->getObject()->createSheet()->setTitle($index);
             }
+
             $this->object = $this->documentWrapper->getObject()->setActiveSheetIndexByName($index);
         } else {
             // create new sheet without a name
@@ -95,9 +68,9 @@ class SheetWrapper extends BaseWrapper
      * @throws \Exception
      * @throws \LogicException
      */
-    public function end()
+    public function end(): void
     {
-        if ($this->object === null) {
+        if (null === $this->object) {
             throw new \LogicException();
         }
 
@@ -112,7 +85,7 @@ class SheetWrapper extends BaseWrapper
             $columnDimension = $this->parameters['properties']['columnDimension'];
             foreach ($columnDimension as $key => $value) {
                 if (isset($value['autoSize'])) {
-                    if ($key === 'default') {
+                    if ('default' === $key) {
                         try {
                             $cellIterator = $this->object->getRowIterator()->current()->getCellIterator();
                             $cellIterator->setIterateOnlyExistingCells(true);
@@ -120,7 +93,7 @@ class SheetWrapper extends BaseWrapper
                             foreach ($cellIterator as $cell) {
                                 $this->object->getColumnDimension($cell->getColumn())->setAutoSize($value['autoSize']);
                             }
-                        } catch (Exception $e) {
+                        } catch (Exception) {
                             // ignore exceptions thrown when no cells are defined
                         }
                     } else {
@@ -130,91 +103,84 @@ class SheetWrapper extends BaseWrapper
             }
         }
 
-        $this->object = null;
         $this->parameters = [];
+        $this->object = null;
         $this->row = null;
+        $this->column = null;
     }
 
-    public function increaseRow()
+    public function increaseRow(): void
     {
-        $this->row = $this->row === null ? self::ROW_DEFAULT : $this->row + 1;
+        $this->row = null === $this->row ? self::ROW_DEFAULT : $this->row + 1;
     }
 
-    public function increaseColumn()
+    public function increaseColumn(): void
     {
-        $this->column = $this->column === null ? self::COLUMN_DEFAULT : $this->column + 1;
+        $this->column = null === $this->column ? self::COLUMN_DEFAULT : $this->column + 1;
     }
 
-    /**
-     * @return Worksheet
-     */
     public function getObject(): Worksheet
     {
         return $this->object;
     }
 
-    /**
-     * @param Worksheet $object
-     */
-    public function setObject(Worksheet $object)
+    public function setObject(Worksheet $object): void
     {
         $this->object = $object;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getRow()
+    public function getRow(): ?int
     {
         return $this->row;
     }
 
-    /**
-     * @param int|null $row
-     */
-    public function setRow($row)
+    public function setRow(?int $row): void
     {
         $this->row = $row;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getColumn()
+    public function getColumn(): ?int
     {
         return $this->column;
     }
 
-    /**
-     * @param int|null $column
-     */
-    public function setColumn($column)
+    public function setColumn(?int $column): void
     {
         $this->column = $column;
     }
 
     /**
      * {@inheritdoc}
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
      */
     protected function configureMappings(): array
     {
         return [
             'autoFilter' => function ($value) { $this->object->setAutoFilter($value); },
             'columnDimension' => [
-                '__multi' => function ($column = 'default'): ColumnDimension {
-                    return $column === 'default' ?
-                        $this->object->getDefaultColumnDimension() :
-                        $this->object->getColumnDimension($column);
+                '__multi' => fn ($index = 'default'): ColumnDimension => 'default' === $index ?
+                    $this->object->getDefaultColumnDimension() :
+                    $this->object->getColumnDimension($index),
+                'autoSize' => static function ($value, ColumnDimension $object) {
+                    $object->setAutoSize($value);
                 },
-                'autoSize' => function ($value, ColumnDimension $object) { $object->setAutoSize($value); },
-                'collapsed' => function ($value, ColumnDimension $object) { $object->setCollapsed($value); },
-                'columnIndex' => function ($value, ColumnDimension $object) { $object->setColumnIndex($value); },
-                'outlineLevel' => function ($value, ColumnDimension $object) { $object->setOutlineLevel($value); },
-                'visible' => function ($value, ColumnDimension $object) { $object->setVisible($value); },
-                'width' => function ($value, ColumnDimension $object) { $object->setWidth($value); },
-                'xfIndex' => function ($value, ColumnDimension $object) { $object->setXfIndex($value); },
+                'collapsed' => static function ($value, ColumnDimension $object) {
+                    $object->setCollapsed($value);
+                },
+                'columnIndex' => static function ($value, ColumnDimension $object) {
+                    $object->setColumnIndex($value);
+                },
+                'outlineLevel' => static function ($value, ColumnDimension $object) {
+                    $object->setOutlineLevel($value);
+                },
+                'visible' => static function ($value, ColumnDimension $object) {
+                    $object->setVisible($value);
+                },
+                'width' => static function ($value, ColumnDimension $object) {
+                    $object->setWidth($value);
+                },
+                'xfIndex' => static function ($value, ColumnDimension $object) {
+                    $object->setXfIndex($value);
+                },
             ],
             'pageMargins' => [
                 'top' => function ($value) { $this->object->getPageMargins()->setTop($value); },
@@ -257,18 +223,30 @@ class SheetWrapper extends BaseWrapper
             ],
             'rightToLeft' => function ($value) { $this->object->setRightToLeft($value); },
             'rowDimension' => [
-                '__multi' => function ($column = 'default'): RowDimension {
-                    return $column === 'default' ?
-                        $this->object->getDefaultRowDimension() :
-                        $this->object->getRowDimension($column);
+                '__multi' => fn ($index = 'default'): RowDimension => 'default' === $index ?
+                    $this->object->getDefaultRowDimension() :
+                    $this->object->getRowDimension($index),
+                'collapsed' => static function ($value, RowDimension $object) {
+                    $object->setCollapsed($value);
                 },
-                'collapsed' => function ($value, RowDimension $object) { $object->setCollapsed($value); },
-                'outlineLevel' => function ($value, RowDimension $object) { $object->setOutlineLevel($value); },
-                'rowHeight' => function ($value, RowDimension $object) { $object->setRowHeight($value); },
-                'rowIndex' => function ($value, RowDimension $object) { $object->setRowIndex($value); },
-                'visible' => function ($value, RowDimension $object) { $object->setVisible($value); },
-                'xfIndex' => function ($value, RowDimension $object) { $object->setXfIndex($value); },
-                'zeroHeight' => function ($value, RowDimension $object) { $object->setZeroHeight($value); },
+                'outlineLevel' => static function ($value, RowDimension $object) {
+                    $object->setOutlineLevel($value);
+                },
+                'rowHeight' => static function ($value, RowDimension $object) {
+                    $object->setRowHeight($value);
+                },
+                'rowIndex' => static function ($value, RowDimension $object) {
+                    $object->setRowIndex($value);
+                },
+                'visible' => static function ($value, RowDimension $object) {
+                    $object->setVisible($value);
+                },
+                'xfIndex' => static function ($value, RowDimension $object) {
+                    $object->setXfIndex($value);
+                },
+                'zeroHeight' => static function ($value, RowDimension $object) {
+                    $object->setZeroHeight($value);
+                },
             ],
             'sheetState' => function ($value) { $this->object->setSheetState($value); },
             'showGridlines' => function ($value) { $this->object->setShowGridlines($value); },

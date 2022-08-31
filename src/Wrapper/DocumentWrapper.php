@@ -2,51 +2,36 @@
 
 namespace MewesK\TwigSpreadsheetBundle\Wrapper;
 
+use InvalidArgumentException;
+use LogicException;
 use MewesK\TwigSpreadsheetBundle\Helper\Filesystem;
-use PhpOffice\PhpSpreadsheet\Exception;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\BaseWriter;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use PhpOffice\PhpSpreadsheet\Writer\Exception;
 use PhpOffice\PhpSpreadsheet\Writer\Pdf\Mpdf;
+use RuntimeException;
 use Symfony\Bridge\Twig\AppVariable;
+use Symfony\Component\Filesystem\Exception\IOException;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
-/**
- * Class DocumentWrapper.
- */
 class DocumentWrapper extends BaseWrapper
 {
-    /**
-     * @var Spreadsheet|null
-     */
-    protected $object;
-    /**
-     * @var array
-     */
-    protected $attributes;
+    protected ?Spreadsheet $object = null;
 
-    /**
-     * DocumentWrapper constructor.
-     *
-     * @param array             $context
-     * @param \Twig_Environment $environment
-     * @param array             $attributes
-     */
-    public function __construct(array $context, \Twig_Environment $environment, array $attributes = [])
+    public function __construct(array $context, Environment $environment, protected array $attributes = [])
     {
         parent::__construct($context, $environment);
-
-        $this->object = null;
-        $this->attributes = $attributes;
     }
 
     /**
-     * @param array $properties
-     *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      */
-    public function start(array $properties = [])
+    public function start(array $properties = []): void
     {
         // load template
         if (isset($properties['template'])) {
@@ -67,17 +52,17 @@ class DocumentWrapper extends BaseWrapper
     }
 
     /**
-     * @throws \LogicException
-     * @throws \RuntimeException
-     * @throws \InvalidArgumentException
+     * @throws LogicException
+     * @throws RuntimeException
+     * @throws InvalidArgumentException
      * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
-     * @throws \Symfony\Component\Filesystem\Exception\IOException
+     * @throws Exception
+     * @throws IOException
      */
-    public function end()
+    public function end(): void
     {
-        if ($this->object === null) {
-            throw new \LogicException();
+        if (null === $this->object) {
+            throw new LogicException();
         }
 
         $format = null;
@@ -87,29 +72,26 @@ class DocumentWrapper extends BaseWrapper
             $format = $this->parameters['format'];
         }
 
-         // try Symfony request
+        // try Symfony request
         elseif (isset($this->context['app'])) {
             /**
-             * @var AppVariable
+             * @var AppVariable $appVariable
              */
             $appVariable = $this->context['app'];
-            if ($appVariable instanceof AppVariable && $appVariable->getRequest() !== null) {
+            if ($appVariable instanceof AppVariable && null !== $appVariable->getRequest()) {
                 $format = $appVariable->getRequest()->getRequestFormat();
             }
         }
 
         // set default
-        if ($format === null || !\is_string($format)) {
-            $format = 'xlsx';
-        } else {
-            $format = strtolower($format);
-        }
+        $format = \is_string($format) ? strtolower($format) : 'xlsx';
 
         // set up mPDF
-        if ($format === 'pdf') {
-            if (!class_exists('\Mpdf\Mpdf')) {
-                throw new \RuntimeException('Error loading mPDF. Is mPDF correctly installed?');
+        if ('pdf' === $format) {
+            if (!class_exists(\Mpdf\Mpdf::class)) {
+                throw new RuntimeException('Error loading mPDF. Is mPDF correctly installed?');
             }
+
             IOFactory::registerWriter('Pdf', Mpdf::class);
         }
 
@@ -117,12 +99,26 @@ class DocumentWrapper extends BaseWrapper
          * @var BaseWriter $writer
          */
         $writer = IOFactory::createWriter($this->object, ucfirst($format));
-        $writer->setPreCalculateFormulas($this->attributes['preCalculateFormulas'] ?? true);
+        $writer->setPreCalculateFormulas($this->attributes['pre_calculate_formulas'] ?? true);
 
         // set up XML cache
-        if ($this->attributes['cache']['xml'] !== false) {
+        if (false !== $this->attributes['cache']['xml']) {
             Filesystem::mkdir($this->attributes['cache']['xml']);
             $writer->setUseDiskCaching(true, $this->attributes['cache']['xml']);
+        }
+
+        // set special CSV writer attributes
+        if ($writer instanceof Csv) {
+            /*
+             * @var Csv $writer
+             */
+            $writer->setDelimiter($this->attributes['csv_writer']['delimiter']);
+            $writer->setEnclosure($this->attributes['csv_writer']['enclosure']);
+            $writer->setExcelCompatibility($this->attributes['csv_writer']['excel_compatibility']);
+            $writer->setIncludeSeparatorLine($this->attributes['csv_writer']['include_separator_line']);
+            $writer->setLineEnding($this->attributes['csv_writer']['line_ending']);
+            $writer->setSheetIndex($this->attributes['csv_writer']['sheet_index']);
+            $writer->setUseBOM($this->attributes['csv_writer']['use_bom']);
         }
 
         $writer->save('php://output');
@@ -131,26 +127,18 @@ class DocumentWrapper extends BaseWrapper
         $this->parameters = [];
     }
 
-    /**
-     * @return Spreadsheet|null
-     */
-    public function getObject()
+    public function getObject(): ?Spreadsheet
     {
         return $this->object;
     }
 
-    /**
-     * @param Spreadsheet|null $object
-     */
-    public function setObject(Spreadsheet $object = null)
+    public function setObject(Spreadsheet $object = null): void
     {
         $this->object = $object;
     }
 
     /**
      * {@inheritdoc}
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
      */
     protected function configureMappings(): array
     {
@@ -183,21 +171,17 @@ class DocumentWrapper extends BaseWrapper
      * Resolves paths using Twig namespaces.
      * The path must start with the namespace.
      * Namespaces are case sensitive.
-     *
-     * @param string $path
-     *
-     * @return string
      */
     private function expandPath(string $path): string
     {
         $loader = $this->environment->getLoader();
 
-        if ($loader instanceof \Twig_Loader_Filesystem && mb_strpos($path, '@') === 0) {
+        if ($loader instanceof FilesystemLoader && str_starts_with($path, '@')) {
             /*
-             * @var \Twig_Loader_Filesystem
+             * @var \Twig\Loader\FilesystemLoader
              */
             foreach ($loader->getNamespaces() as $namespace) {
-                if (mb_strpos($path, $namespace) === 1) {
+                if (1 === mb_strpos($path, $namespace)) {
                     foreach ($loader->getPaths($namespace) as $namespacePath) {
                         $expandedPathAttribute = str_replace('@'.$namespace, $namespacePath, $path);
                         if (Filesystem::exists($expandedPathAttribute)) {

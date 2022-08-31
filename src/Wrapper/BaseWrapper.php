@@ -2,80 +2,37 @@
 
 namespace MewesK\TwigSpreadsheetBundle\Wrapper;
 
-/**
- * Class BaseWrapper.
- */
 abstract class BaseWrapper
 {
-    /**
-     * @var array
-     */
-    protected $context;
+    protected array $parameters = [];
 
-    /**
-     * @var \Twig_Environment
-     */
-    protected $environment;
+    protected array $mappings = [];
 
-    /**
-     * @var array
-     */
-    protected $parameters;
-    /**
-     * @var array
-     */
-    protected $mappings;
-
-    /**
-     * BaseWrapper constructor.
-     *
-     * @param array             $context
-     * @param \Twig_Environment $environment
-     */
-    public function __construct(array $context, \Twig_Environment $environment)
+    public function __construct(protected array $context, protected \Twig\Environment $environment)
     {
-        $this->context = $context;
-        $this->environment = $environment;
-
-        $this->parameters = [];
         $this->mappings = $this->configureMappings();
     }
 
-    /**
-     * @return array
-     */
     public function getParameters(): array
     {
         return $this->parameters;
     }
 
-    /**
-     * @param array $parameters
-     */
     public function setParameters(array $parameters)
     {
         $this->parameters = $parameters;
     }
 
-    /**
-     * @return array
-     */
     public function getMappings(): array
     {
         return $this->mappings;
     }
 
-    /**
-     * @param array $mappings
-     */
-    public function setMappings(array $mappings)
+    public function setMappings(array $mappings): void
     {
         $this->mappings = $mappings;
     }
 
-    /**
-     * @return array
-     */
     protected function configureMappings(): array
     {
         return [];
@@ -84,15 +41,11 @@ abstract class BaseWrapper
     /**
      * Calls the matching mapping callable for each property.
      *
-     * @param array       $properties
-     * @param array|null  $mappings
-     * @param string|null $column
-     *
      * @throws \RuntimeException
      */
-    protected function setProperties(array $properties, array $mappings = null, string $column = null)
+    protected function setProperties(array $properties, array $mappings = null, string $column = null): void
     {
-        if ($mappings === null) {
+        if (null === $mappings) {
             $mappings = $this->mappings;
         }
 
@@ -105,9 +58,6 @@ abstract class BaseWrapper
                 // recursion
                 if (isset($mappings[$key]['__multi'])) {
                     // handle multi target structure (with columns)
-                    /**
-                     * @var array $value
-                     */
                     foreach ($value as $_column => $_value) {
                         $this->setProperties($_value, $mappings[$key], $_column);
                     }
@@ -120,7 +70,7 @@ abstract class BaseWrapper
                 // if column is set it is used to get object from the callback in __multi
                 $mappings[$key](
                     $value,
-                    $column !== null ? $mappings['__multi']($column) : null
+                    null !== $column ? $mappings['__multi']($column) : null
                 );
             } else {
                 throw new \RuntimeException(sprintf('Invalid mapping for key "%s"', $key));

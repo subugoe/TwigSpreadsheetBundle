@@ -2,31 +2,18 @@
 
 namespace MewesK\TwigSpreadsheetBundle\Tests\Twig;
 
-/**
- * Class PdfTwigTest.
- */
 class PdfTwigTest extends BaseTwigTest
 {
-    /**
-     * @return array
-     */
     public function formatProvider(): array
     {
         return [['pdf']];
     }
 
-    //
-    // Tests
-    //
-
     /**
-     * @param string $format
-     *
      * @throws \Exception
-     *
      * @dataProvider formatProvider
      */
-    public function testBasic($format)
+    public function testBasic(string $format): void
     {
         $path = $this->getDocument('cellProperties', $format);
 

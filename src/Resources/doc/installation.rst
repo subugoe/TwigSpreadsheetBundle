@@ -9,7 +9,7 @@ following command to download the latest stable version of this bundle:
 
 .. code-block:: terminal
 
-    $ composer require mewesk/twig-spreadsheet-bundle
+    $ composer require subugoe/twig-spreadsheet-bundle
 
 This command requires you to have Composer installed globally, as explained
 in the `installation chapter`_ of the Composer documentation.

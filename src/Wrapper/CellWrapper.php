@@ -4,103 +4,80 @@ namespace MewesK\TwigSpreadsheetBundle\Wrapper;
 
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Exception;
+use Twig\Environment;
 
-/**
- * Class CellWrapper.
- */
 class CellWrapper extends BaseWrapper
 {
-    /**
-     * @var SheetWrapper
-     */
-    protected $sheetWrapper;
+    protected ?Cell $object = null;
 
-    /**
-     * @var Cell|null
-     */
-    protected $object;
-
-    /**
-     * CellWrapper constructor.
-     *
-     * @param array             $context
-     * @param \Twig_Environment $environment
-     * @param SheetWrapper      $sheetWrapper
-     */
-    public function __construct(array $context, \Twig_Environment $environment, SheetWrapper $sheetWrapper)
+    public function __construct(array $context, Environment $environment, protected SheetWrapper $sheetWrapper)
     {
         parent::__construct($context, $environment);
-
-        $this->sheetWrapper = $sheetWrapper;
-
-        $this->object = null;
     }
 
     /**
-     * @param int|null   $index
-     * @param mixed|null $value
-     * @param array      $properties
-     *
      * @throws \InvalidArgumentException
      * @throws \LogicException
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \RuntimeException
      */
-    public function start(int $index = null, $value = null, array $properties = [])
+    public function start(int $index = null, array $properties = []): void
     {
-        if ($this->sheetWrapper->getObject() === null) {
+        if (null === $this->sheetWrapper->getObject()) {
             throw new \LogicException();
         }
 
-        if ($index === null) {
+        if (null === $index) {
             $this->sheetWrapper->increaseColumn();
         } else {
             $this->sheetWrapper->setColumn($index);
         }
 
-        $this->object = $this->sheetWrapper->getObject()->getCellByColumnAndRow($this->sheetWrapper->getColumn(),
+        $this->object = $this->sheetWrapper->getObject()->getCellByColumnAndRow(
+            $this->sheetWrapper->getColumn(),
             $this->sheetWrapper->getRow());
 
-        if ($value !== null) {
-            if (isset($properties['dataType'])) {
-                $this->object->setValueExplicit($value, $properties['dataType']);
+        $this->parameters['value'] = null;
+        $this->parameters['properties'] = $properties;
+        $this->setProperties($properties);
+    }
+
+    /**
+     * @param mixed|null $value
+     *
+     * @throws Exception
+     */
+    public function value($value = null)
+    {
+        if (null !== $value) {
+            if (isset($this->parameters['properties']['dataType'])) {
+                $this->object->setValueExplicit($value, $this->parameters['properties']['dataType']);
             } else {
                 $this->object->setValue($value);
             }
         }
 
         $this->parameters['value'] = $value;
-        $this->parameters['properties'] = $properties;
-
-        $this->setProperties($properties);
     }
 
-    public function end()
+    public function end(): void
     {
         $this->object = null;
         $this->parameters = [];
     }
 
-    /**
-     * @return Cell|null
-     */
-    public function getObject()
+    public function getObject(): ?Cell
     {
         return $this->object;
     }
 
-    /**
-     * @param Cell|null $object
-     */
-    public function setObject(Cell $object = null)
+    public function setObject(Cell $object = null): void
     {
         $this->object = $object;
     }
 
     /**
      * {@inheritdoc}
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
      */
     protected function configureMappings(): array
     {
@@ -126,6 +103,7 @@ class CellWrapper extends BaseWrapper
                 if (\is_int($value)) {
                     $value = Coordinate::stringFromColumnIndex($value).$this->sheetWrapper->getRow();
                 }
+
                 $this->sheetWrapper->getObject()->mergeCells(sprintf('%s:%s', $this->object->getCoordinate(), $value));
             },
             'style' => function ($value) { $this->sheetWrapper->getObject()->getStyle($this->object->getCoordinate())->applyFromArray($value); },
