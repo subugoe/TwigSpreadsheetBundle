@@ -6,62 +6,28 @@ use MewesK\TwigSpreadsheetBundle\Helper\Filesystem;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\HeaderFooterDrawing;
 
-/**
- * Class DrawingWrapper.
- */
 class DrawingWrapper extends BaseWrapper
 {
     /**
-     * @var SheetWrapper
-     */
-    protected $sheetWrapper;
-    /**
-     * @var HeaderFooterWrapper
-     */
-    protected $headerFooterWrapper;
-
-    /**
      * @var Drawing|HeaderFooterDrawing|null
      */
-    protected $object;
-    /**
-     * @var array
-     */
-    protected $attributes;
+    protected $object = null;
 
-    /**
-     * DrawingWrapper constructor.
-     *
-     * @param array               $context
-     * @param \Twig_Environment   $environment
-     * @param SheetWrapper        $sheetWrapper
-     * @param HeaderFooterWrapper $headerFooterWrapper
-     * @param array             $attributes
-     */
-    public function __construct(array $context, \Twig_Environment $environment, SheetWrapper $sheetWrapper, HeaderFooterWrapper $headerFooterWrapper, array $attributes = [])
+    public function __construct(array $context, \Twig\Environment $environment, protected SheetWrapper $sheetWrapper, protected HeaderFooterWrapper $headerFooterWrapper, protected array $attributes = [])
     {
         parent::__construct($context, $environment);
-
-        $this->sheetWrapper = $sheetWrapper;
-        $this->headerFooterWrapper = $headerFooterWrapper;
-
-        $this->object = null;
-        $this->attributes = $attributes;
     }
 
     /**
-     * @param string $path
-     * @param array $properties
-     *
      * @throws \Symfony\Component\Filesystem\Exception\IOException
      * @throws \LogicException
      * @throws \InvalidArgumentException
      * @throws \RuntimeException
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      */
-    public function start(string $path, array $properties = [])
+    public function start(string $path, array $properties = []): void
     {
-        if ($this->sheetWrapper->getObject() === null) {
+        if (null === $this->sheetWrapper->getObject()) {
             throw new \LogicException();
         }
 
@@ -69,7 +35,7 @@ class DrawingWrapper extends BaseWrapper
         $tempPath = $this->createTempCopy($path);
 
         // add to header/footer
-        if ($this->headerFooterWrapper->getObject()) {
+        if (null !== $this->headerFooterWrapper->getObject()) {
             $headerFooterParameters = $this->headerFooterWrapper->getParameters();
             $alignment = $this->headerFooterWrapper->getAlignmentParameters()['type'];
             $location = '';
@@ -91,7 +57,7 @@ class DrawingWrapper extends BaseWrapper
                     throw new \InvalidArgumentException(sprintf('Unknown alignment type "%s"', $alignment));
             }
 
-            $location .= $headerFooterParameters['baseType'] === HeaderFooterWrapper::BASETYPE_HEADER ? 'H' : 'F';
+            $location .= HeaderFooterWrapper::BASETYPE_HEADER === $headerFooterParameters['baseType'] ? 'H' : 'F';
 
             $this->object = new HeaderFooterDrawing();
             $this->object->setPath($tempPath);
@@ -109,24 +75,18 @@ class DrawingWrapper extends BaseWrapper
         $this->setProperties($properties);
     }
 
-    public function end()
+    public function end(): void
     {
         $this->object = null;
         $this->parameters = [];
     }
 
-    /**
-     * @return Drawing
-     */
     public function getObject(): Drawing
     {
         return $this->object;
     }
 
-    /**
-     * @param Drawing $object
-     */
-    public function setObject(Drawing $object)
+    public function setObject(Drawing $object): void
     {
         $this->object = $object;
     }
@@ -159,25 +119,22 @@ class DrawingWrapper extends BaseWrapper
     }
 
     /**
-     * @param string $path
-     *
      * @throws \InvalidArgumentException
      * @throws \Symfony\Component\Filesystem\Exception\IOException
-     *
-     * @return string
      */
     private function createTempCopy(string $path): string
     {
         // create temp path
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-        $tempPath = sprintf('%s/tsb_%s%s', $this->attributes['cache']['bitmap'], md5($path), $extension ? '.'.$extension : '');
+        $extension = pathinfo($path, \PATHINFO_EXTENSION);
+        $tempPath = sprintf('%s/tsb_%s%s', $this->attributes['cache']['bitmap'], md5($path), '' !== $extension && '0' !== $extension ? '.'.$extension : '');
 
         // create local copy
         if (!Filesystem::exists($tempPath)) {
             $data = file_get_contents($path);
-            if ($data === false) {
+            if (false === $data) {
                 throw new \InvalidArgumentException($path.' does not exist.');
             }
+
             Filesystem::dumpFile($tempPath, $data);
             unset($data);
         }

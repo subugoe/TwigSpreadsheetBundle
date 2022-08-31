@@ -1,0 +1,31 @@
+name: CI-coverage
+
+on: [ push ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+
+      - uses: php-actions/composer@v6
+        with:
+          php_version: "8.0"
+          php_extensions: fileinfo gd xml zip
+          version: 2
+
+      - name: PHPUnit Tests
+        uses: php-actions/phpunit@v3
+        with:
+          version: 9
+          php_version: 8.0
+          configuration: phpunit.xml.dist
+          php_extensions: fileinfo gd xml zip
+          args: -c phpunit.coverage.xml.dist --coverage-clover var/coverage/coverage.xml

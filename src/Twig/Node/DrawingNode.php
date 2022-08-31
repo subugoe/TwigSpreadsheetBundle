@@ -2,23 +2,19 @@
 
 namespace MewesK\TwigSpreadsheetBundle\Twig\Node;
 
-/**
- * Class DrawingNode.
- */
+use Twig\Compiler;
+
 class DrawingNode extends BaseNode
 {
-    /**
-     * @param \Twig_Compiler $compiler
-     */
-    public function compile(\Twig_Compiler $compiler)
+    public function compile(Compiler $compiler)
     {
         $compiler->addDebugInfo($this)
             ->write(self::CODE_FIX_CONTEXT)
             ->write(self::CODE_INSTANCE.'->startDrawing(')
                 ->subcompile($this->getNode('path'))->raw(', ')
                 ->subcompile($this->getNode('properties'))
-            ->raw(');'.PHP_EOL)
-            ->write(self::CODE_INSTANCE.'->endDrawing();'.PHP_EOL);
+            ->raw(');'.\PHP_EOL)
+            ->write(self::CODE_INSTANCE.'->endDrawing();'.\PHP_EOL);
     }
 
     /**

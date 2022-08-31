@@ -1,26 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/5.0/phpunit.xsd"
-         backupGlobals="false"
-         colors="true"
-         bootstrap="./vendor/autoload.php"
-        >
-    <php>
-        <env name="SYMFONY_PHPUNIT_VERSION" value="6.5"/>
-    </php>
-
-    <testsuites>
-        <testsuite name="MewesKTwigSpreadsheetBundle Test Suite">
-            <directory>./tests</directory>
-        </testsuite>
-    </testsuites>
-
-    <filter>
-        <whitelist>
-            <directory>./src</directory>
-            <exclude>
-                <directory>./src/Resources</directory>
-            </exclude>
-        </whitelist>
-    </filter>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd" backupGlobals="false" colors="true" bootstrap="./vendor/autoload.php">
+  <coverage>
+    <include>
+      <directory>./src</directory>
+    </include>
+    <exclude>
+      <directory>./src/Resources</directory>
+    </exclude>
+  </coverage>
+  <php>
+    <env name="SYMFONY_PHPUNIT_VERSION" value="9.3"/>
+  </php>
+  <testsuites>
+    <testsuite name="MewesKTwigSpreadsheetBundle Test Suite">
+      <directory>./tests</directory>
+    </testsuite>
+  </testsuites>
 </phpunit>

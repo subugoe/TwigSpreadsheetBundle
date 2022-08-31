@@ -2,108 +2,78 @@
 
 namespace MewesK\TwigSpreadsheetBundle\Tests\Twig;
 
-/**
- * Class CsvOdsXlsXlsxErrorTwigTest.
- */
 class CsvOdsXlsXlsxErrorTwigTest extends BaseTwigTest
 {
-    /**
-     * @return array
-     */
     public function formatProvider(): array
     {
         return [['csv'], ['ods'], ['xls'], ['xlsx']];
     }
 
-    //
-    // Tests
-    //
-
     /**
-     * @param string $format
-     *
      * @throws \Exception
-     *
      * @dataProvider formatProvider
      */
-    public function testCellIndexError($format)
+    public function testDocumentError(string $format): void
     {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument 1 passed to MewesK\TwigSpreadsheetBundle\Wrapper\PhpSpreadsheetWrapper::setCellIndex() must be of the type integer');
-
-        $this->getDocument('cellIndexError', $format);
-    }
-
-    /**
-     * @param string $format
-     *
-     * @throws \Exception
-     *
-     * @dataProvider formatProvider
-     */
-    public function testDocumentError($format)
-    {
-        $this->expectException(\Twig_Error_Syntax::class);
+        $this->expectException(\Twig\Error\SyntaxError::class);
         $this->expectExceptionMessage('Node "MewesK\TwigSpreadsheetBundle\Twig\Node\DocumentNode" is not allowed inside of Node "MewesK\TwigSpreadsheetBundle\Twig\Node\SheetNode"');
 
         $this->getDocument('documentError', $format);
     }
 
     /**
-     * @param string $format
-     *
      * @throws \Exception
-     *
      * @dataProvider formatProvider
      */
-    public function testDocumentErrorTextAfter($format)
+    public function testDocumentErrorTextAfter(string $format): void
     {
-        $this->expectException(\Twig_Error_Syntax::class);
-        $this->expectExceptionMessage('Node "Twig_Node_Text" is not allowed after Node "MewesK\TwigSpreadsheetBundle\Twig\Node\DocumentNode"');
+        $this->expectException(\Twig\Error\SyntaxError::class);
+        $this->expectExceptionMessage('Node "'.\Twig\Node\TextNode::class.'" is not allowed after Node "MewesK\TwigSpreadsheetBundle\Twig\Node\DocumentNode"');
 
         $this->getDocument('documentErrorTextAfter', $format);
     }
 
     /**
-     * @param string $format
-     *
      * @throws \Exception
-     *
      * @dataProvider formatProvider
      */
-    public function testDocumentErrorTextBefore($format)
+    public function testDocumentErrorTextBefore(string $format): void
     {
-        $this->expectException(\Twig_Error_Syntax::class);
-        $this->expectExceptionMessage('Node "Twig_Node_Text" is not allowed before Node "MewesK\TwigSpreadsheetBundle\Twig\Node\DocumentNode"');
+        $this->expectException(\Twig\Error\SyntaxError::class);
+        $this->expectExceptionMessage('Node "'.\Twig\Node\TextNode::class.'" is not allowed before Node "MewesK\TwigSpreadsheetBundle\Twig\Node\DocumentNode"');
 
         $this->getDocument('documentErrorTextBefore', $format);
     }
 
     /**
-     * @param string $format
-     *
      * @throws \Exception
-     *
      * @dataProvider formatProvider
      */
-    public function testRowIndexError($format)
+    public function testStartCellIndexError(string $format): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument 1 passed to MewesK\TwigSpreadsheetBundle\Wrapper\PhpSpreadsheetWrapper::setRowIndex() must be of the type integer');
+
+        $this->getDocument('cellIndexError', $format);
+    }
+
+    /**
+     * @throws \Exception
+     * @dataProvider formatProvider
+     */
+    public function testStartRowIndexError(string $format): void
+    {
+        $this->expectException(\TypeError::class);
 
         $this->getDocument('rowIndexError', $format);
     }
 
     /**
-     * @param string $format
-     *
      * @throws \Exception
-     *
      * @dataProvider formatProvider
      */
-    public function testSheetError($format)
+    public function testSheetError(string $format): void
     {
-        $this->expectException(\Twig_Error_Syntax::class);
+        $this->expectException(\Twig\Error\SyntaxError::class);
         $this->expectExceptionMessage('Node "MewesK\TwigSpreadsheetBundle\Twig\Node\RowNode" is not allowed inside of Node "MewesK\TwigSpreadsheetBundle\Twig\Node\DocumentNode"');
 
         $this->getDocument('sheetError', $format);
